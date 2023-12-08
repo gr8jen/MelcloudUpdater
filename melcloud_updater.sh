@@ -139,7 +139,8 @@ if [ "$McDebug" = On ] ; then echo 'Sessionkey: $SESSION';echo; fi
 if [ "$McDebug" = On ] ; then echo 'DEBUG: Get data from MelCloud';echo; fi
 
 $CURL -s -o $FOLDER/.deviceid 'https://app.melcloud.com/Mitsubishi.Wifi.Client/User/ListDevices' \
-  -H 'X-MitsContextKey: '"$SESSION"'' -H 'Accept-Encoding: gzip, deflate, br' \
+  -H 'X-MitsContextKey: '"$SESSION"'' \
+  -H 'Accept-Encoding: gzip, deflate, br' \
   -H 'Accept-Language: nl-NL,nl;q=0.9,en-NL;q=0.8,en;q=0.7,en-US;q=0.6,de;q=0.5' \
   -H 'Accept: application/json, text/javascript, */*; q=0.01' \
   -H 'Referer: https://app.melcloud.com/' \
@@ -200,8 +201,8 @@ if [ $OPERATIONMODE -eq $OPERATION_MODE_LEGIONELLA ] && [ $CurrentTankWaterTempe
         	echo CurrentSetTankWaterTemperature=$CurrentSetTankWaterTemperature
 	fi
 
-  	mcString=$(</home/pi/melcloud_updater/.meldata jq -r '.Structure.Devices[] | {"EffectiveFlags":281475043819552,SetTankWaterTemperature:'"\"$SetTankWaterTemperatureLegionella\""',HCControlType:1,DeviceID:.Device.DeviceID,DeviceType:.Device.DeviceType,Scene:.Device.Scene,SceneOwner:.Device.SceneOwner,UnitStatus:.Device.UnitStatus,Zone1Name:.Zone1Name,Zone2Name:.Zone2Name,OperationMode:.Device.OperationMode,OperationModeZone1:.Device.OperationModeZone1,OperationModeZone2:.Device.OperationModeZone2,SetTemperatureZone1:.Device.SetTemperatureZone1,SetTemperatureZone2:.Device.SetTemperatureZone2,SetCoolFlowTemperatureZone1:.Device.SetCoolFlowTemperatureZone1,SetCoolFlowTemperatureZone2:.Device.SetCoolFlowTemperatureZone2,SetHeatFlowTemperatureZone1:.Device.SetHeatFlowTemperatureZone1,SetHeatFlowTemperatureZone2:.Device.SetHeatFlowTemperatureZone2,EcoHotWater:.Device.EcoHotWater,ForcedHotWaterMode:.Device.ForcedHotWaterMode,HasPendingCommand:false,HolidayMode:.Device.HolidayMode,IdleZone1:.Device.IdleZone1,IdleZone2:.Device.IdleZone2,Offline:.Device.Offline,DemandPercentage:.Device.DemandPercentage,Power:.Device.Power,ProhibitHotWater:.Device.ProhibitHotWater,ProhibitZone1:.Device.ProhibitZone1,ProhibitZone2:.Device.ProhibitZone2,TemperatureIncrementOverride:.Device.TemperatureIncrementOverride,"LastCommunication":'"\"$LastCommunication\""',"NextCommunication":'"\"$NextCommunication\""',"ErrorCode":.Device.ErrorCode,"ErrorMessage":.Device.ErrorMessage,"ForcedHotWaterMode":.Device.ForcedHotWaterMode,"LocalIPAddress":.Device.LocalIPAddress,"OutdoorTemperature":.Device.OutdoorTemperature,"RoomTemperatureZone1":.Device.RoomTemperatureZone1,"RoomTemperatureZone2":.Device.RoomTemperatureZone2,"TankWaterTemperature":.Device.TankWaterTemperature}' | tr -d '[:space:]')
-  	MelCloudUpdate=1
+	MelCloudUpdate=1
+  	mcString=$(</home/pi/melcloud_updater/.meldata jq -r '.Structure.Devices[] | {"EffectiveFlags":281475043819552,SetTankWaterTemperature:'$SetTankWaterTemperatureLegionella',HCControlType:1,DeviceID:.Device.DeviceID,DeviceType:.Device.DeviceType,Scene:.Device.Scene,SceneOwner:.Device.SceneOwner,UnitStatus:.Device.UnitStatus,Zone1Name:.Zone1Name,Zone2Name:.Zone2Name,OperationMode:.Device.OperationMode,OperationModeZone1:.Device.OperationModeZone1,OperationModeZone2:.Device.OperationModeZone2,SetTemperatureZone1:.Device.SetTemperatureZone1,SetTemperatureZone2:.Device.SetTemperatureZone2,SetCoolFlowTemperatureZone1:.Device.SetCoolFlowTemperatureZone1,SetCoolFlowTemperatureZone2:.Device.SetCoolFlowTemperatureZone2,SetHeatFlowTemperatureZone1:.Device.SetHeatFlowTemperatureZone1,SetHeatFlowTemperatureZone2:.Device.SetHeatFlowTemperatureZone2,EcoHotWater:.Device.EcoHotWater,ForcedHotWaterMode:.Device.ForcedHotWaterMode,HasPendingCommand:false,HolidayMode:.Device.HolidayMode,IdleZone1:.Device.IdleZone1,IdleZone2:.Device.IdleZone2,Offline:.Device.Offline,DemandPercentage:.Device.DemandPercentage,Power:.Device.Power,ProhibitHotWater:.Device.ProhibitHotWater,ProhibitZone1:.Device.ProhibitZone1,ProhibitZone2:.Device.ProhibitZone2,TemperatureIncrementOverride:.Device.TemperatureIncrementOverride,"LastCommunication":'"\"$LastCommunication\""',"NextCommunication":'"\"$NextCommunication\""',"ErrorCode":.Device.ErrorCode,"ErrorMessage":.Device.ErrorMessage,"ForcedHotWaterMode":.Device.ForcedHotWaterMode,"LocalIPAddress":.Device.LocalIPAddress,"OutdoorTemperature":.Device.OutdoorTemperature,"RoomTemperatureZone1":.Device.RoomTemperatureZone1,"RoomTemperatureZone2":.Device.RoomTemperatureZone2,"TankWaterTemperature":.Device.TankWaterTemperature}' | tr -d '[:space:]')
 fi
 
 
@@ -215,7 +216,7 @@ if [ $OPERATIONMODE -eq $OPERATION_MODE_LEGIONELLA ] && [ $CurrentSetTankWaterTe
                 echo CurrentSetTankWaterTemperature=$CurrentSetTankWaterTemperature
 	fi
 
-        mcString=$(</home/pi/melcloud_updater/.meldata jq -r '.Structure.Devices[] | {"EffectiveFlags":281475043819552,SetTankWaterTemperature:'"\"$SetTankWaterTemperatureNormalMode\""',HCControlType:1,DeviceID:.Device.DeviceID,DeviceType:.Device.DeviceType,Scene:.Device.Scene,SceneOwner:.Device.SceneOwner,UnitStatus:.Device.UnitStatus,Zone1Name:.Zone1Name,Zone2Name:.Zone2Name,OperationMode:.Device.OperationMode,OperationModeZone1:.Device.OperationModeZone1,OperationModeZone2:.Device.OperationModeZone2,SetTemperatureZone1:.Device.SetTemperatureZone1,SetTemperatureZone2:.Device.SetTemperatureZone2,SetCoolFlowTemperatureZone1:.Device.SetCoolFlowTemperatureZone1,SetCoolFlowTemperatureZone2:.Device.SetCoolFlowTemperatureZone2,SetHeatFlowTemperatureZone1:.Device.SetHeatFlowTemperatureZone1,SetHeatFlowTemperatureZone2:.Device.SetHeatFlowTemperatureZone2,EcoHotWater:.Device.EcoHotWater,ForcedHotWaterMode:.Device.ForcedHotWaterMode,HasPendingCommand:false,HolidayMode:.Device.HolidayMode,IdleZone1:.Device.IdleZone1,IdleZone2:.Device.IdleZone2,Offline:.Device.Offline,DemandPercentage:.Device.DemandPercentage,Power:.Device.Power,ProhibitHotWater:.Device.ProhibitHotWater,ProhibitZone1:.Device.ProhibitZone1,ProhibitZone2:.Device.ProhibitZone2,TemperatureIncrementOverride:.Device.TemperatureIncrementOverride,"LastCommunication":'"\"$LastCommunication\""',"NextCommunication":'"\"$NextCommunication\""',"ErrorCode":.Device.ErrorCode,"ErrorMessage":.Device.ErrorMessage,"ForcedHotWaterMode":.Device.ForcedHotWaterMode,"LocalIPAddress":.Device.LocalIPAddress,"OutdoorTemperature":.Device.OutdoorTemperature,"RoomTemperatureZone1":.Device.RoomTemperatureZone1,"RoomTemperatureZone2":.Device.RoomTemperatureZone2,"TankWaterTemperature":.Device.TankWaterTemperature}' | tr -d '[:space:]')
+        mcString=$(</home/pi/melcloud_updater/.meldata jq -r '.Structure.Devices[] | {"EffectiveFlags":281475043819552,SetTankWaterTemperature:'$SetTankWaterTemperatureNormalMode',HCControlType:1,DeviceID:.Device.DeviceID,DeviceType:.Device.DeviceType,Scene:.Device.Scene,SceneOwner:.Device.SceneOwner,UnitStatus:.Device.UnitStatus,Zone1Name:.Zone1Name,Zone2Name:.Zone2Name,OperationMode:.Device.OperationMode,OperationModeZone1:.Device.OperationModeZone1,OperationModeZone2:.Device.OperationModeZone2,SetTemperatureZone1:.Device.SetTemperatureZone1,SetTemperatureZone2:.Device.SetTemperatureZone2,SetCoolFlowTemperatureZone1:.Device.SetCoolFlowTemperatureZone1,SetCoolFlowTemperatureZone2:.Device.SetCoolFlowTemperatureZone2,SetHeatFlowTemperatureZone1:.Device.SetHeatFlowTemperatureZone1,SetHeatFlowTemperatureZone2:.Device.SetHeatFlowTemperatureZone2,EcoHotWater:.Device.EcoHotWater,ForcedHotWaterMode:.Device.ForcedHotWaterMode,HasPendingCommand:false,HolidayMode:.Device.HolidayMode,IdleZone1:.Device.IdleZone1,IdleZone2:.Device.IdleZone2,Offline:.Device.Offline,DemandPercentage:.Device.DemandPercentage,Power:.Device.Power,ProhibitHotWater:.Device.ProhibitHotWater,ProhibitZone1:.Device.ProhibitZone1,ProhibitZone2:.Device.ProhibitZone2,TemperatureIncrementOverride:.Device.TemperatureIncrementOverride,"LastCommunication":'"\"$LastCommunication\""',"NextCommunication":'"\"$NextCommunication\""',"ErrorCode":.Device.ErrorCode,"ErrorMessage":.Device.ErrorMessage,"ForcedHotWaterMode":.Device.ForcedHotWaterMode,"LocalIPAddress":.Device.LocalIPAddress,"OutdoorTemperature":.Device.OutdoorTemperature,"RoomTemperatureZone1":.Device.RoomTemperatureZone1,"RoomTemperatureZone2":.Device.RoomTemperatureZone2,"TankWaterTemperature":.Device.TankWaterTemperature}' | tr -d '[:space:]')
         MelCloudUpdate=1
 fi
 
@@ -230,7 +231,7 @@ if [ $MelCloudUpdate -eq 1 ]; then
 	curl  -s -o $FOLDER/.deviceid 'https://app.melcloud.com/Mitsubishi.Wifi.Client/Device/SetAtw' \
 	  -H 'authority: app.melcloud.com' \
 	  -H 'sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="99", "Google Chrome";v="99"' \
-	  -H 'x-mitscontextkey: 5F042D4CB90348D8AD8652C175745C' \
+	  -H 'x-mitscontextkey: '"$SESSION"'' \
 	  -H 'sec-ch-ua-mobile: ?0' \
 	  -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36' \
 	  -H 'content-type: application/json; charset=UTF-8' \
@@ -257,7 +258,7 @@ if [ $SEND_TO_INFLUXDB -eq 1 ]; then
 		echo "temperatures $INFLUXDB_DATA"
 	fi
 
-	curl --request POST ''"$HOST"'/api/v2/write?org='"$ORGANIZATION"'&bucket='"$BUCKET"'&precision=s' \
+	curl --request POST ''"$HOST"'/api/v2/write?org='"$ORGANISATION"'&bucket='"$BUCKET"'&precision=s' \
 	  --header 'Authorization: Token '"$TOKEN"'' \
 	  --header 'Content-Type: text/plain; charset=utf-8' \
 	  --header 'Accept: application/json' \
