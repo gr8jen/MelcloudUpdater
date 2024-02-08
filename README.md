@@ -1,4 +1,4 @@
-# MelcloudUpdater 1.0.0
+# MelcloudUpdater 1.1.0
 
 Tool for extracting data from Melcloud Ecodan and update Setpoint (only 1x Air/Water unit!! Air/Air isn't working)
 
@@ -36,7 +36,9 @@ Configure as shown at: https://docs.influxdata.com/influxdb/v2/install/#set-up-i
 
 -> path of the used programs
 
--> Setpoint for normal operatoin and Legionella (if you want something else)
+-> Setpoint for normal operation and Legionella (if you want something else)
+
+-> Time each day you want to run SWW (if you want something else)
 
 -> for Influxdb:
 
