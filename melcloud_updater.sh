@@ -25,6 +25,11 @@ SetTankWaterTemperatureLegionella=55
 SetTankWaterTemperatureNormalMode=47
 OPERATION_MODE_LEGIONELLA=6
 
+## Set the time when we want to run SWW
+SETTIMESWW="1500" # Give time without : 
+CURRENTTIME=$(date +%H%M)
+NOWPLUSTREEMINUTES=$(date -d "+3mins" +%H%M)
+OPERATION_MODE_SWW=1
 
 ## Send data from melcloud to a influxdb for monitoring
 #SEND_TO_INFLUXDB=0
@@ -34,7 +39,6 @@ BUCKET=
 ORGANISATION=
 TOKEN=
 HOST=
-
 
 ## Path
 CAT=/bin/cat
@@ -59,6 +63,59 @@ MCurrentEnergyProduced=""
 
 ###########################################################################
 #                   No changes are needed here below                      #
+###########################################################################
+
+
+###########################################################################
+#                          Function declarations                          #
+###########################################################################
+
+# Login on MelCloud, validate credentials and return Session ContextKey
+login(){
+  if [ "$McDebug" = On ] ; then echo 'DEBUG: Testing MelCloud login and get session key'; echo; fi
+
+  $CURL -s -o $FOLDER/.session 'https://app.melcloud.com/Mitsubishi.Wifi.Client/Login/ClientLogin' \
+    -H 'Cookie: policyaccepted=true; gsScrollPos-189=' \
+    -H 'Origin: https://app.melcloud.com' \
+    -H 'Accept-Encoding: gzip, deflate, br' \
+    -H 'Accept-Language: nl-NL,nl;q=0.9,en-NL;q=0.8,en;q=0.7,en-US;q=0.6,de;q=0.5' \
+    -H 'Content-Type: application/json; charset=UTF-8' \
+    -H 'Accept: application/json, text/javascript, */*; q=0.01' \
+    -H 'Referer: https://app.melcloud.com/' -H 'X-Requested-With: XMLHttpRequest' \
+    -H 'Connection: keep-alive' --data-binary '{"Email":'"\"$USERNAME\""',"Password":'"\"$PASSWORD\""',"Language":12,"AppVersion":"1.17.3.1","Persist":true,"CaptchaResponse":null}' --compressed ;
+
+
+   LOGINCHECK=`/bin/cat $FOLDER/.session | $JQ '.ErrorId'`
+
+   if [ "$LOGINCHECK" = "1" ]; then
+        echo "----------------------------------"
+        echo "|Wrong Melcloud login credentials|"
+        echo "---------------------------------"
+        exit
+   fi
+
+   SESSION=`cat $FOLDER/.session | $JQ '."LoginData"."ContextKey"' -r`
+
+   echo "$SESSION"
+}
+
+## Get Data for all Devices/Building IDs and write it to .deviceid
+getData(){
+if [ "$McDebug" = On ] ; then echo 'DEBUG: Get data from MelCloud';echo; fi
+
+$CURL -s -o $FOLDER/.deviceid 'https://app.melcloud.com/Mitsubishi.Wifi.Client/User/ListDevices' \
+  -H 'X-MitsContextKey: '"$1"'' \
+  -H 'Accept-Encoding: gzip, deflate, br' \
+  -H 'Accept-Language: nl-NL,nl;q=0.9,en-NL;q=0.8,en;q=0.7,en-US;q=0.6,de;q=0.5' \
+  -H 'Accept: application/json, text/javascript, */*; q=0.01' \
+  -H 'Referer: https://app.melcloud.com/' \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Cookie: policyaccepted=true; gsScrollPos-189=' \
+  -H 'Connection: keep-alive' --compressed
+}
+
+###########################################################################
+#                       End function declarations                         #
 ###########################################################################
 
 ## Start
@@ -108,45 +165,49 @@ fi
 # Value to keep track of an updated device to trigger MelCloud update command, always default 0, will be>
 MelCloudUpdate=0
 
-## Login on MelCloud and get Session key
-if [ "$McDebug" = On ] ; then echo 'DEBUG: Testing MelCloud login and get session key';echo; fi
-
-$CURL -s -o $FOLDER/.session 'https://app.melcloud.com/Mitsubishi.Wifi.Client/Login/ClientLogin' \
-  -H 'Cookie: policyaccepted=true; gsScrollPos-189=' \
-  -H 'Origin: https://app.melcloud.com' \
-  -H 'Accept-Encoding: gzip, deflate, br' \
-  -H 'Accept-Language: nl-NL,nl;q=0.9,en-NL;q=0.8,en;q=0.7,en-US;q=0.6,de;q=0.5' \
-  -H 'Content-Type: application/json; charset=UTF-8' \
-  -H 'Accept: application/json, text/javascript, */*; q=0.01' \
-  -H 'Referer: https://app.melcloud.com/' -H 'X-Requested-With: XMLHttpRequest' \
-  -H 'Connection: keep-alive' --data-binary '{"Email":'"\"$USERNAME\""',"Password":'"\"$PASSWORD\""',"Language":12,"AppVersion":"1.17.3.1","Persist":true,"CaptchaResponse":null}' --compressed ;
-
-
-LOGINCHECK=`/bin/cat $FOLDER/.session | $JQ '.ErrorId'`
-
-if [ "$LOGINCHECK" = "1" ]; then
-        echo "----------------------------------"
-        echo "|Wrong Melcloud login credentials|"
-        echo "---------------------------------"
-        exit
+# Check if the .session exists and is not empty
+if [ ! -s "${FOLDER}/.session" ]; then
+  if [ "$McDebug" = On ] ; then echo 'Session not valid';echo; fi
+  SESSION=$(login)
+else
+  SESSION=`cat $FOLDER/.session | $JQ '."LoginData"."ContextKey"' -r`
 fi
-
-SESSION=`cat $FOLDER/.session | $JQ '."LoginData"."ContextKey"' -r`
 
 if [ "$McDebug" = On ] ; then echo 'Sessionkey: $SESSION';echo; fi
 
 ## Get Data for all Devices/Building IDs and write it to .deviceid
-if [ "$McDebug" = On ] ; then echo 'DEBUG: Get data from MelCloud';echo; fi
+getData $SESSION
 
-$CURL -s -o $FOLDER/.deviceid 'https://app.melcloud.com/Mitsubishi.Wifi.Client/User/ListDevices' \
-  -H 'X-MitsContextKey: '"$SESSION"'' \
-  -H 'Accept-Encoding: gzip, deflate, br' \
-  -H 'Accept-Language: nl-NL,nl;q=0.9,en-NL;q=0.8,en;q=0.7,en-US;q=0.6,de;q=0.5' \
-  -H 'Accept: application/json, text/javascript, */*; q=0.01' \
-  -H 'Referer: https://app.melcloud.com/' \
-  -H 'X-Requested-With: XMLHttpRequest' \
-  -H 'Cookie: policyaccepted=true; gsScrollPos-189=' \
-  -H 'Connection: keep-alive' --compressed
+## Read and prepare data set (remove [] characters) and write it to .meldata
+if [ "$McDebug" = On ] ; then echo 'DEBUG: Preparing dataset';echo; fi
+
+fulldata=$( cat $FOLDER/.deviceid )
+echo "${fulldata:1:${#fulldata}-2}" > $FOLDER/.meldata>&1
+
+## Check if data output is fine
+/bin/cat $FOLDER/.meldata | $JQ -e . >/dev/null 2>&1
+
+if [ ${PIPESTATUS[1]} != 0 ]; then
+        echo "Retrieved Data is not json compatible, something went wrong....logging in again...."
+        SESSION=$(login)
+        if [ "$McDebug" = On ] ; then echo 'Sessionkey: $SESSION';echo; fi
+
+        getData $SESSION
+
+        ## Read and prepare data set (remove [] characters) and write it to .meldata
+        if [ "$McDebug" = On ] ; then echo 'DEBUG: Preparing dataset';echo; fi
+
+        fulldata=$( cat $FOLDER/.deviceid )
+        echo "${fulldata:1:${#fulldata}-2}" > $FOLDER/.meldata>&1
+
+        ## Check if data output is fine
+        /bin/cat $FOLDER/.meldata | $JQ -e . >/dev/null 2>&1
+
+        if [ ${PIPESTATUS[1]} != 0 ]; then
+                echo "Retrieved Data is not json compatible, something went wrong...Help...."
+                exit
+        fi
+fi
 
 
 ## Check if there are multiple units, this script is (currently) only for 1 unit.
@@ -165,19 +226,6 @@ BUILDINGID=`cat $FOLDER/.deviceid | $JQ '.' -r | grep BuildingID | head -n1 | cu
 echo DeviceID=$DEVICEID
 echo BuildingID=$BUILDINGID
 
-## Read and prepare data set (remove [] characters) and write it to .meldata
-if [ "$McDebug" = On ] ; then echo 'DEBUG: Preparing dataset';echo; fi
-
-fulldata=$( cat $FOLDER/.deviceid )
-echo "${fulldata:1:${#fulldata}-2}" > $FOLDER/.meldata>&1
-
-## Check if data output is fine
-/bin/cat $FOLDER/.meldata | $JQ -e . >/dev/null 2>&1
-
-if [ ${PIPESTATUS[1]} != 0 ]; then
-        echo "Retrieved Data is not json compatible, something went wrong....Help...."
-        exit
-fi
 
 if [ "$McDebug" = On ] ; then echo 'DEBUG: Data is fine, you can check it in file .meldata';echo; fi
 
@@ -214,6 +262,32 @@ if [ $OPERATIONMODE -eq $OPERATION_MODE_LEGIONELLA ] && [ $CurrentSetTankWaterTe
         	echo OPERATIONMODE=$OPERATIONMODE
                 echo CurrentTankWaterTemperature=$CurrentTankWaterTemperature
                 echo CurrentSetTankWaterTemperature=$CurrentSetTankWaterTemperature
+	fi
+
+        mcString=$(</home/pi/melcloud_updater/.meldata jq -r '.Structure.Devices[] | {"EffectiveFlags":281475043819552,SetTankWaterTemperature:'$SetTankWaterTemperatureNormalMode',HCControlType:1,DeviceID:.Device.DeviceID,DeviceType:.Device.DeviceType,Scene:.Device.Scene,SceneOwner:.Device.SceneOwner,UnitStatus:.Device.UnitStatus,Zone1Name:.Zone1Name,Zone2Name:.Zone2Name,OperationMode:.Device.OperationMode,OperationModeZone1:.Device.OperationModeZone1,OperationModeZone2:.Device.OperationModeZone2,SetTemperatureZone1:.Device.SetTemperatureZone1,SetTemperatureZone2:.Device.SetTemperatureZone2,SetCoolFlowTemperatureZone1:.Device.SetCoolFlowTemperatureZone1,SetCoolFlowTemperatureZone2:.Device.SetCoolFlowTemperatureZone2,SetHeatFlowTemperatureZone1:.Device.SetHeatFlowTemperatureZone1,SetHeatFlowTemperatureZone2:.Device.SetHeatFlowTemperatureZone2,EcoHotWater:.Device.EcoHotWater,ForcedHotWaterMode:.Device.ForcedHotWaterMode,HasPendingCommand:false,HolidayMode:.Device.HolidayMode,IdleZone1:.Device.IdleZone1,IdleZone2:.Device.IdleZone2,Offline:.Device.Offline,DemandPercentage:.Device.DemandPercentage,Power:.Device.Power,ProhibitHotWater:.Device.ProhibitHotWater,ProhibitZone1:.Device.ProhibitZone1,ProhibitZone2:.Device.ProhibitZone2,TemperatureIncrementOverride:.Device.TemperatureIncrementOverride,"LastCommunication":'"\"$LastCommunication\""',"NextCommunication":'"\"$NextCommunication\""',"ErrorCode":.Device.ErrorCode,"ErrorMessage":.Device.ErrorMessage,"ForcedHotWaterMode":.Device.ForcedHotWaterMode,"LocalIPAddress":.Device.LocalIPAddress,"OutdoorTemperature":.Device.OutdoorTemperature,"RoomTemperatureZone1":.Device.RoomTemperatureZone1,"RoomTemperatureZone2":.Device.RoomTemperatureZone2,"TankWaterTemperature":.Device.TankWaterTemperature}' | tr -d '[:space:]')
+        MelCloudUpdate=1
+fi
+
+
+## When the SWW temp is too low, we need to increase the SetTankWaterTemperature at given time.
+if [ "$CURRENTTIME" -le "$SETTIMESWW" ] && [ "$NOWPLUSTREEMINUTES" -gt "$SETTIMESWW" ] && [ $CurrentTankWaterTemperature -lt $SetTankWaterTemperatureNormalMode ]; then
+
+	if [ "$McDebug" = On ] ; then
+		echo "Increase SetTankWaterTemperature to trigger SWW"
+       		echo "CurrentTankWaterTemperature=$CurrentTankWaterTemperature"
+	fi
+
+	MelCloudUpdate=1
+  	mcString=$(</home/pi/melcloud_updater/.meldata jq -r '.Structure.Devices[] | {"EffectiveFlags":281475043819552,SetTankWaterTemperature:'$SetTankWaterTemperatureLegionella',HCControlType:1,DeviceID:.Device.DeviceID,DeviceType:.Device.DeviceType,Scene:.Device.Scene,SceneOwner:.Device.SceneOwner,UnitStatus:.Device.UnitStatus,Zone1Name:.Zone1Name,Zone2Name:.Zone2Name,OperationMode:.Device.OperationMode,OperationModeZone1:.Device.OperationModeZone1,OperationModeZone2:.Device.OperationModeZone2,SetTemperatureZone1:.Device.SetTemperatureZone1,SetTemperatureZone2:.Device.SetTemperatureZone2,SetCoolFlowTemperatureZone1:.Device.SetCoolFlowTemperatureZone1,SetCoolFlowTemperatureZone2:.Device.SetCoolFlowTemperatureZone2,SetHeatFlowTemperatureZone1:.Device.SetHeatFlowTemperatureZone1,SetHeatFlowTemperatureZone2:.Device.SetHeatFlowTemperatureZone2,EcoHotWater:.Device.EcoHotWater,ForcedHotWaterMode:.Device.ForcedHotWaterMode,HasPendingCommand:false,HolidayMode:.Device.HolidayMode,IdleZone1:.Device.IdleZone1,IdleZone2:.Device.IdleZone2,Offline:.Device.Offline,DemandPercentage:.Device.DemandPercentage,Power:.Device.Power,ProhibitHotWater:.Device.ProhibitHotWater,ProhibitZone1:.Device.ProhibitZone1,ProhibitZone2:.Device.ProhibitZone2,TemperatureIncrementOverride:.Device.TemperatureIncrementOverride,"LastCommunication":'"\"$LastCommunication\""',"NextCommunication":'"\"$NextCommunication\""',"ErrorCode":.Device.ErrorCode,"ErrorMessage":.Device.ErrorMessage,"ForcedHotWaterMode":.Device.ForcedHotWaterMode,"LocalIPAddress":.Device.LocalIPAddress,"OutdoorTemperature":.Device.OutdoorTemperature,"RoomTemperatureZone1":.Device.RoomTemperatureZone1,"RoomTemperatureZone2":.Device.RoomTemperatureZone2,"TankWaterTemperature":.Device.TankWaterTemperature}' | tr -d '[:space:]')
+fi
+
+## When the OperationMode is running in SWW mode and we reach the target 'TankWaterTemperature', we can set the 'SetTankWaterTemperature' back to its normal value
+if  [ $OPERATIONMODE -eq $OPERATION_MODE_SWW ] && [ $CurrentTankWaterTemperature -ge $SetTankWaterTemperatureNormalMode ]; then
+
+        if [ "$McDebug" = On ] ; then
+		echo "Decrease SetTankWaterTemperature to stop SWW"
+                echo "CurrentTankWaterTemperature=$CurrentTankWaterTemperature"
+                echo "CurrentSetTankWaterTemperature=$CurrentSetTankWaterTemperature"
 	fi
 
         mcString=$(</home/pi/melcloud_updater/.meldata jq -r '.Structure.Devices[] | {"EffectiveFlags":281475043819552,SetTankWaterTemperature:'$SetTankWaterTemperatureNormalMode',HCControlType:1,DeviceID:.Device.DeviceID,DeviceType:.Device.DeviceType,Scene:.Device.Scene,SceneOwner:.Device.SceneOwner,UnitStatus:.Device.UnitStatus,Zone1Name:.Zone1Name,Zone2Name:.Zone2Name,OperationMode:.Device.OperationMode,OperationModeZone1:.Device.OperationModeZone1,OperationModeZone2:.Device.OperationModeZone2,SetTemperatureZone1:.Device.SetTemperatureZone1,SetTemperatureZone2:.Device.SetTemperatureZone2,SetCoolFlowTemperatureZone1:.Device.SetCoolFlowTemperatureZone1,SetCoolFlowTemperatureZone2:.Device.SetCoolFlowTemperatureZone2,SetHeatFlowTemperatureZone1:.Device.SetHeatFlowTemperatureZone1,SetHeatFlowTemperatureZone2:.Device.SetHeatFlowTemperatureZone2,EcoHotWater:.Device.EcoHotWater,ForcedHotWaterMode:.Device.ForcedHotWaterMode,HasPendingCommand:false,HolidayMode:.Device.HolidayMode,IdleZone1:.Device.IdleZone1,IdleZone2:.Device.IdleZone2,Offline:.Device.Offline,DemandPercentage:.Device.DemandPercentage,Power:.Device.Power,ProhibitHotWater:.Device.ProhibitHotWater,ProhibitZone1:.Device.ProhibitZone1,ProhibitZone2:.Device.ProhibitZone2,TemperatureIncrementOverride:.Device.TemperatureIncrementOverride,"LastCommunication":'"\"$LastCommunication\""',"NextCommunication":'"\"$NextCommunication\""',"ErrorCode":.Device.ErrorCode,"ErrorMessage":.Device.ErrorMessage,"ForcedHotWaterMode":.Device.ForcedHotWaterMode,"LocalIPAddress":.Device.LocalIPAddress,"OutdoorTemperature":.Device.OutdoorTemperature,"RoomTemperatureZone1":.Device.RoomTemperatureZone1,"RoomTemperatureZone2":.Device.RoomTemperatureZone2,"TankWaterTemperature":.Device.TankWaterTemperature}' | tr -d '[:space:]')
