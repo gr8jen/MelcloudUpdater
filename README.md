@@ -60,7 +60,7 @@ Configure as shown at: https://docs.influxdata.com/influxdb/v2/install/#set-up-i
 crontab -e
 ```
 
-  */3 * * * *   /home/pi/melcloud/melcloud_updater.sh
+  */3 * * * *   /home/pi/melcloud_updater/melcloud_updater.sh
   
   (since the ~ october 2023 firmware update the time must be changed from 2 to 3 minutes)
   
